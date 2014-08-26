@@ -1,0 +1,176 @@
+\documentclass[10pt]{article}
+%\documentclass{sig-alternate}
+%\documentclass{llncs}
+%\documentclass[twocolumn]{svjour3}
+%\documentclass{IEEEtran}
+%\documentclass[10pt,twocolumn,twoside]{IEEEtran}
+%\documentclass[11pt,draftcls,onecolumn]{IEEEtran}
+%\documentclass[times, 10pt,twocolumn]{article}
+%\usepackage{latex8}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{latexsym}
+\usepackage{pifont}
+%\usepackage{subfigure}
+\usepackage{ifthen}
+\usepackage{xspace}
+%\usepackage{epic}
+%\usepackage{calc}
+%\usepackage{verbatim}
+%\usepackage{enumerate}
+%\usepackage{xspace}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{a4wide}
+%\usepackage{extarrows}
+\usepackage{color}
+\usepackage{booktabs}
+\usepackage{bold-extra}
+\usepackage{multirow}
+%\usepackage{authblk}
+%\usepackage{keywords}
+%\usepackage{amsthm}
+%\usepackage{cite,citesort}
+\usepackage{times}
+\usepackage{comment}
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+
+\newtheorem{prot}{Protocol}
+\newtheorem{Thm}{Theorem}
+\newtheorem{Def}{Definition}
+\newtheorem{Lem}{Lemma}
+\newtheorem{Pro}{Proposition}
+\newtheorem{Ex}{Example}
+\newtheorem{Rem}{Remark}
+\newtheorem{Ass}{Assumption}
+\newtheorem{Cor}[Thm]{Corollary}
+\newtheorem{Conj}[Thm]{Conjecture}
+\newtheorem{Prob}[Thm]{Problem}
+\newtheorem{Sol}[Thm]{Solution}
+
+\newcommand{\zo}{\{0,1\}}
+\newcommand{\getsr}{\leftarrow{\textsc r}}
+\newcommand{\getsc}{\xleftarrow{\textsc \$}}
+\newcommand{\N}{\mathbb{Z}_N}
+\newcommand{\B}{\mathcal{B}}
+\newcommand{\A}{\mathcal{A}}
+\newcommand{\G}{\mathbb{G}}
+\newcommand{\x}{\textbf{x}}
+\newcommand{\cc}{\textbf{c}}
+
+
+\newcommand{\squish}{
+  \setlength{\topsep}{0pt}
+  \setlength{\itemsep}{0ex}
+  %\vspace{-2ex}
+  \setlength{\parskip}{0pt}
+}
+
+%\roman{mpfootnote}
+
+%\setlength{\extrarowheight}{2pt}
+
+%\setlength{\subfigcapskip}{6pt}
+
+%\sloppy
+
+\bibliographystyle{plain}
+%\pagestyle{plain}
+%\bibliographystyle{IEEEtran}
+
+%--------------------------------------------------------------------
+
+\begin{document}
+
+%\author{}
+%\date{}
+%\maketitle
+\section{k-NN based approaches}
+In the following description, we let $D$ denote the set of training data $\x_i$, and let $C_j$ for $1\leq j\leq m$ denote the disjoint set which contains the training data with the same labeled class $w_j$, where $m$ is the total number of classes. We always have $D=\bigcup_{1\leq j\leq m} C_j$. We also assume two basic algorithms $kNN(\cdot)$ and $Cent(\cdot)$. The $k$NN algorithm $kNN(\cdot)$ takes as input an unlabeled data $\x$, the output is a class $w_j$ which the algorithm assigns $\x$ to. Let $\cc_j$ denote the centroid of $C_j$, the centroid computation algorithm $Cent(\cdot)$ takes as input a set $C_j$ containing vectors with the same dimension, output the centroid $\cc_j$ of the set $C_j$. All distances in the subsequent description are computed as Euclidean distance, that is, for two vectors $\bf{u},\bf{v}$ with the same dimension $n$, $d(\textbf{u},\textbf{v})=\sqrt{\sum_{i=1}^{n}(u_i-v_i)^2}$, where $d(\cdot,\cdot)$ denotes distance and $u_i,v_i$ denote the $i$-th component of vector $\bf{u,v}$.
+
+The following algorithm pseudocode describes when an unlabeled data $\x$ has been classified, the decision rule of whether adding this new labeled data into the current training set or not.
+
+\begin{algorithm}
+\caption{$k$NN with Max Distance Criteria}
+\begin{algorithmic}[1]
+\Procedure {$k$NN-MD}{$\x, D$}
+
+\State $w_j \gets kNN(\x)$;
+\State $C'_j \gets C_j \bigcup \{\x\}$;
+\State $\cc_j \gets$ $Cent(C'_j)$;
+\If {$d(\x,\cc_j)\leq \underset{\x_i\in C_j}{\text{max}}$ $d(\x_i,\cc_j)$}
+\State $C_j \gets C'_j, D \gets D\bigcup \{\x\}$;
+\Else
+\State $C_j \gets C_j, D \gets D$;
+\EndIf
+
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+Another decision rule is to add the newly labeled data into training set only if $d(\x,\cc_j)\leq \underset{\x_i\in C_j}{\text{min}}$ $d(\x_i,\cc_j)$, without doubt this rule is much more restrictive than the Max Distance version, and it is expected to take more iterations in order to classify all data in the testing set, if even possible.
+
+Inspired by the above two decision rules, we now introduce the third one .The intuition behind this rule is similar as the unsupervised learning k-means clustering method. In the standard k-means algorithm, the objective is to partition the data set into k sets and minimize the within cluster sum of squares. However, we can't mimic the exact same idea as of k-means: when more labeled data are classified and added into the training set, the size of each individual class will not decrease, and subsequently "minimizing" the sum of squares is not possible at all. Instead, we take the \textit{average} of the sum of squares, compare the results of with or without the newly classified data. If the average value decreases when adding a newly labeled data, then add it into the training set, otherwise reject. We call this method average within class sum of squares (AWCSS). Let $AS_j$ denote the average sum of squares of class $j$, $|\cdot|$ denote the size of a set, the detailed pseudocode follows:
+
+\begin{algorithm}
+\caption{$k$NN with Average Within Class Sum of Squares Criteria}
+\begin{algorithmic}[1]
+\Procedure {$k$NN-AWCSS}{$\x, D$}
+\State $w_j \gets kNN(\x)$;
+\State $\cc_j \gets$ $Cent(C_j)$;
+\State $AS_j \gets \frac{1}{|C_j|}\sum_{\x_i\in C_j} d(\x_i,\cc_j)^2$
+\State $C'_j \gets C_j \bigcup \{\x\}$;
+\State $\cc'_j \gets$ $Cent(C'_j)$;
+\State $AS'_j \gets \frac{1}{|C'_j|}\sum_{\x_i\in C'_j} d(\x_i,\cc'_j)^2$
+\If {$AS'_j\leq AS_j$}
+\State $C_j \gets C'_j, D \gets D\bigcup \{\x\}$;
+\Else
+\State $C_j \gets C_j, D \gets D$;
+\EndIf
+
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+Intuitively algorithm 2 is somehow more ``restricted'' than algorithm 1. As in 1, the new instance only needs to be ``closer'' to the (new) centroid compared to the (new) furtherest labeled data in the training set, however in algorithm 2, the new instance needs to ``win over'' the average distance (or more precisely the average of squared distances). But algorithm 2 is expected to produce more accurate result.
+
+Another natural question is, how could we intuitively interpret the ``change'' of the involving classified set $C_j$, will it becomes more ``compact'', in the sense of ``contracting''? Or, is the set ``enlargeable'', as opposite the ``contracting'' idea? It seems that the answer depends on how we define ``contracting'' or ``enlargeable''. Consider the following simple example (note this example is neither a general case, nor represents any group of cases, but it is enough for illustration purpose):
+
+Given initial three points $(1,1),(2,4),(3,1)$ represent the training data in the same class. Assume that the following points have \textit{already} been classified as the \textit{same class} as the given 3 points through kNN algorithm (our focus of this example is on the two decision rules, not the kNN classifier). The points are $(0,0),(2,0),(4,2),(6,4)$. Simple calculation shows Algorithm 1 will accept and add the first three points into the training set, reject only last point, while Algorithm 2 only accepts point $(2,0)$ but rejects other three. This intuitively in certain sense shows that Algorithm 2 is more restricted than Algorithm 1.
+
+Back to the ``contracting'' and ``enlargeable" question. If we measure this concept by the average distance between all the points to the centroid, then clearly Algorithm 2 is always ``contracting'', as this is exactly what the decision rule is, and Algorithm 1 is ``enlargeable'', supported by the evidence that certain testing points, like $(0,0)$ is rejected by Algorithm 2, but accepted by Algorithm 1 (that is, although the average distance is not reduced, the testing point have at least won over one existing training data).
+
+If we take the measure by considering the maximum distance between the data in $C_j$ to their centroid, then both two algorithms are ``enlargeable''. For example the testing point $(2,0)$ which is accepted by both algorithms. Simple calculation shows, before this point is added into the training set, the maximum distance between the original three points to their centroid is 2 unit. Once $(2,0)$ is added and new centroid is re-computed, the maximum distance becomes 2.5 unit. Clearly if one wishes to draw a circle to enclose all points in the updated training set centered at the new centroid, the circle covers a larger area compared to the previous iteration. 
+
+\section{k-NN based approaches analysis}
+We follow the same idea used in \cite{zhang2013network} for analyzing our k-NN based approaches. At a high level intuition, our instance selection criteria itself can be considered as a two-class classification problem: a newly classified testing instance is, according to the above mentioned criteria, either decided to be used and put into the training set, or rejected and put back into the testing set. We use the Max Distance Criteria as an illustrative example:
+
+In the following description, ``Yes" refers to the case where the newly classified testing instance is accepted by the Criteria and put into the training set, while No refers to the instance is rejected and put back into the testing set, for a future re-classification. $\omega$ denotes the outcome of the instance goes through the Criteria.
+
+\[
+\omega = \begin{cases} \text{Yes} &\mbox{if  }  d(\x,\cc_j) \leq \underset{\x_i\in C_j}{\text{max}}d(\x_i,\cc_j)\\
+\text{No} &\mbox{if }  d(\x,\cc_j) > \underset{\x_i\in C_j}{\text{max}}d(\x_i,\cc_j)\end{cases}
+\]
+
+Similarly, we define the ``\textbf{distance divergence}''. Let $\delta_{\x}=d(\x,\cc_j)-\underset{\x_i\in C_j}{\text{max}}d(\x_i,\cc_j)$, the above expression becomes
+
+\[
+\omega = \begin{cases} \text{Yes} & \text{if  }  \Delta_{\x}\leq 0\\
+\text{No} &\text{if } \Delta_{\x} > 0 \end{cases}
+\] 
+
+Assume that the distance divergence of traffic flows in any class is independent and identically distributed, and normal distribution is used for this analysis, then the probability density function (PDF) of the distance divergence is 
+\[
+p(\delta_{\x})  \sim \begin{cases} \mathcal{N}(\mu_1,\sigma^2_1) &\text{for Yes}\\
+\mathcal{N}(\mu_2,\sigma^2_2)  &\text{for No}\end{cases}
+\]
+
+
+\section{Na\"{i}ve Bayes based approach}
+
+\bibliography{InternetTraffic}
+
+\end{document}
